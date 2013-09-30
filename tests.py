@@ -61,6 +61,21 @@ class TestParseSourceList(unittest.TestCase):
         self._test(["google.com", "'none'"], False)
 
 
+class TestMatchSourceExpressions(unittest.TestCase):
+    
+    def _test(self, slist, expectation):
+        r = csp.match_source_expressions(slist)
+        self.assertEqual(expectation, r)
+
+    def test_slist_with_just_self(self):
+        self._test(["'self'"], True)
+
+    def test_slist_with_self_and_uri(self):
+        self._test(["'self'", "google.com"], True)
+
+    def test_slist_with_self_without_quote_should_fail(self):
+        self._test(["self", "google.com"], False)
+
 class TestMain(unittest.TestCase):
     
     def test_policy_with_just_default_src(self):
@@ -87,7 +102,5 @@ class TestMain(unittest.TestCase):
         policy = "default-src 'self' google.com; unknown-src *;"
         d = csp.main(policy)
         self.assertEqual(False, d)
-
-
 
 

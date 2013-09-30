@@ -108,7 +108,54 @@ def parse_source_list(source_list):
         else:
             return True
     # match a source expression via the CSP grammar
-    return match_source_expression(source_list)
+    return match_source_expressions(source_list)
 
-def match_source_expression(source_list):
+def match_source_expressions(source_list):
+    """
+    Determine whether the source list matches source expressions.
+    Iterate each source list element (uri) to a source expression
+    according the CSP grammar.
+
+    Parameters
+    ----------
+    source_list : list
+        A list of directive values.
+    
+    Returns
+    -------
+    matched : bool
+
+    """
+
+    if source_list and source_list[0] == "*":
+        return True
+    for index, uri in enumerate(source_list[1:]):
+        uri = uri.lower()
+        if uri not in constant.SCHEME_SOURCE and uri not in constant.KEYWORD_SOURCE:
+            if not match_host_source(uri):
+                return False
     return True
+
+def match_host_source(uri):
+    """
+    Determine whether the given URI matches a host source
+    grammar specified by the CSP grammar.
+
+    Parameters
+    ----------
+    uri : str
+
+    Returns
+    -------
+    matched : bool
+
+    """
+
+    r = re.compile(constant.HOST_SOURCE)
+    m = r.match(uri)
+    if m:
+        # only consider full string match
+        if m.group() == uri:
+            return True
+    return False
+
