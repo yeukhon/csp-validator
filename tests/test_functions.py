@@ -81,7 +81,7 @@ class TestMatchSourceExpressions(unittest.TestCase):
         # CSP allows hostname like self, localhost, mail
         self._test(["self", "google.com"], True)
 
-class TestMain(unittest.TestCase):
+class TestValidate(unittest.TestCase):
     def _assert_valid(self, policy, expectation):
         r = csp.validate(policy)
         self.assertEqual(expectation, r["valid"])
@@ -95,6 +95,8 @@ class TestMain(unittest.TestCase):
                     found = True
             if found:
                 self.assertEqual(True, r["errors"][directive] != [])
+                self.assertEqual(True, directive in r["errors"][directive])
+                self.assertEqual(True, "unknown directive" in r["errors"][directive])
             else:
                 return False
         else:

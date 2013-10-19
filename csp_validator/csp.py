@@ -36,13 +36,13 @@ def validate(csp):
     result = {
         "errors": []
     }
-
+    
     directives = parse_policy(csp)
     for directive in directives:
         if not validate_directive(directive):
             result["errors"].append({
                 "directive_name": directive,
-                "reason": "%s is an unknown directive."
+                "reason": "%s is an unknown directive." % directive
             })            
     if result["errors"]:
         result["valid"] = False
@@ -68,7 +68,7 @@ def parse_policy(csp):
         of directive values.
 
     """
-
+    
     r1 = re.compile(';\s*')
     r2 = re.compile('\s+')
 
