@@ -1,0 +1,23 @@
+What to do?
+
+Given a CSP as a string:
+    - make a dictionry whose key is the directive name and a list of directive values by
+      splitting ; first, then spaces and take first element as DN.
+    - for each directive name
+        - check the directie name is valid
+        - check the list of directive values matches one of the followings:
+            - try match with a SCHEME SOURCE
+            - else try match with a KEYWORD SOURCE
+            - else try match with a host source
+            * abort immeidately if a failure is encountered
+
+    return a dictionary of the following key/value
+        valid: true/false
+        errors: [
+                    {
+                        directive_name:
+                        reason:
+                    }
+                 ]
+
+      

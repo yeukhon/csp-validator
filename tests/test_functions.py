@@ -1,5 +1,9 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 import unittest
-import csp
+from csp_validator import csp
 
 class TestParsePolicy(unittest.TestCase):
 
@@ -73,34 +77,58 @@ class TestMatchSourceExpressions(unittest.TestCase):
     def test_slist_with_self_and_uri(self):
         self._test(["'self'", "google.com"], True)
 
-    def test_slist_with_self_without_quote_should_fail(self):
-        self._test(["self", "google.com"], False)
+    def test_slist_with_self_without_quote_should_not_fail(self):
+        # CSP allows hostname like self, localhost, mail
+        self._test(["self", "google.com"], True)
 
 class TestMain(unittest.TestCase):
-    
+    def _assert_valid(self, policy, expectation):
+        r = csp.validate(policy)
+        self.assertEqual(expectation, r["valid"])
+
+    def _assert_errors(self, policy, errors=None, directive=None):
+        r = csp.validate(policy)
+        if not errors and directive:
+            found = False
+            for i, d in enumerate(r["errors"]):
+                if d.get(directive):
+                    found = True
+            if found:
+                self.assertEqual(True, r["errors"][directive] != [])
+            else:
+                return False
+        else:
+            self.assertEqual([], r["errors"])
+
     def test_policy_with_just_default_src(self):
         policy = "default-src 'self';"
-        d = csp.main(policy)
-        self.assertEqual(True, d)
+        d = csp.validate(policy)
+        self._assert_valid(policy, True)
+        self._assert_errors(policy, errors=None)
 
     def test_policy_with_default_src_ends_without_semicolon(self):
         policy = "default-src 'self'"
-        d = csp.main(policy)
-        self.assertEqual(True, d)
+        d = csp.validate(policy)
+        self._assert_valid(policy, True)
+        self._assert_errors(policy, errors=None)
 
     def test_policy_with_two_directives(self):
         policy = "default-src 'self' google.com; img-src *;"
-        d = csp.main(policy)
-        self.assertEqual(True, d)
+        d = csp.validate(policy)
+        self._assert_valid(policy, True)
+        self._assert_errors(policy, errors=None)
 
     def test_policy_with_unknown_directive(self):
         policy = "unknown-src 'self' google.com;"
-        d = csp.main(policy)
-        self.assertEqual(False, d)
+        d = csp.validate(policy)
+        self._assert_valid(policy, False)
+        self._assert_errors(policy, directive="unknown-src")
 
     def test_policy_with_unkown_directive_as_second_directive(self):
         policy = "default-src 'self' google.com; unknown-src *;"
-        d = csp.main(policy)
-        self.assertEqual(False, d)
+        d = csp.validate(policy)
+        self._assert_valid(policy, False)
+        self._assert_errors(policy, directive="uknown-src")
 
-
+if __name__ == "__main__":
+    unittest.main()

@@ -1,7 +1,11 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 import re
 import constant
 
-def main(csp):
+def validate(csp):
     """
     Main function to parse and validate the given Content
     Security Policy. 
@@ -13,18 +17,38 @@ def main(csp):
     
     Returns
     -------
-    is_valid : bool
-        If the policy is parsed and correct according to
-        the Content Security Policy grammar rule, return
-        ``True``. Otherwise, ``False`` is return.
+    result : dict
+        A dictionary with two keys ("valid", "errors"). The
+        structure of the dictionary is documented as follows:
+        
+        {
+            valid: True/False,
+            errors: [
+                        {
+                            directive_name: str,
+                            reason: str
+                        }
+                    ]
+        }
 
     """
+
+    result = {
+        "errors": []
+    }
 
     directives = parse_policy(csp)
     for directive in directives:
         if not validate_directive(directive):
-            return False
-    return True
+            result["errors"].append({
+                "directive_name": directive,
+                "reason": "%s is an unknown directive."
+            })            
+    if result["errors"]:
+        result["valid"] = False
+    else:
+        result["valid"] = True
+    return result
 
 def parse_policy(csp):
     """
@@ -64,8 +88,10 @@ def parse_policy(csp):
 
 def validate_directive(directive):
     """
-    Return ``True`` if the directive name is correct according
-    to CSP 1.0 specification.
+
+    Determine whether the given directive is one of the 
+    documented directive in the Content Security
+    Policy 1.0 specification. 
 
     Parameters
     ----------
@@ -127,35 +153,41 @@ def match_source_expressions(source_list):
 
     """
 
+    # wildcard has superpower 
     if source_list and source_list[0] == "*":
         return True
-    for index, uri in enumerate(source_list[1:]):
+
+    for index, uri in enumerate(source_list):
         uri = uri.lower()
-        if uri not in constant.SCHEME_SOURCE and uri not in constant.KEYWORD_SOURCE:
-            if not match_host_source(uri):
-                return False
-    return True
+        is_scheme_src = match(uri, constant.SCHEME_SOURCE)
+        is_keyword_src = match(uri, constant.KEYWORD_SOURCE)
+        is_host_src = match(uri, constant.HOST_SOURCE)
+        if any((is_scheme_src, is_keyword_src, is_host_src)):
+            return True
+        else:
+            return False
 
-def match_host_source(uri):
+def match(uri, regex):
     """
-    Determine whether the given URI matches a host source
-    grammar specified by the CSP grammar.
-
+    Decide whether uri matches one of the classes
+    of regex. If a match is found and match matches
+    the full uri string, return True. Otherwise, return
+    False.
+    
     Parameters
     ----------
     uri : str
+    regex : str
 
     Returns
     -------
     matched : bool
 
     """
-
-    r = re.compile(constant.HOST_SOURCE)
+    r = re.compile(regex)
     m = r.match(uri)
-    if m:
-        # only consider full string match
-        if m.group() == uri:
-            return True
-    return False
+    if m and m.group() == uri:
+        return True
+    else:
+        return False
 
