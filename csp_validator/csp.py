@@ -101,6 +101,9 @@ def validate_directive(directive):
     documented directive in the Content Security
     Policy 1.0 specification. 
 
+    Deprecated directives are also check and a different
+    error is returned for deprecated directive.
+
     Parameters
     ----------
     directive : str
@@ -125,6 +128,8 @@ def validate_directive(directive):
     if is_valid:
         return is_valid, ""
     else:
+        if directive.lower() in constant.DEPRECATED_DIRECTIVES:
+            return is_valid, "%s is a deprecated directive." % directive
         return is_valid, "%s is an unknown directive." % directive
 
 def parse_source_list(source_list):
