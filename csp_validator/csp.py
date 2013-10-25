@@ -45,10 +45,11 @@ def validate(csp):
                 "directive_name": directive,
                 "reason": reason
             })
-        if not parse_source_list(directives[directive]):
+        valid, reason = parse_source_list(directives[directive])
+        if not valid:
             result["errors"].append({
                 "directive_name": directive,
-                "reason": "%s contain invalid source expression." % directive
+                "reason": reason % directive
             })
 
     if result["errors"]:
@@ -139,18 +140,28 @@ def parse_source_list(source_list):
     Returns
     -------
     is_valid : bool
-    
+   
+    reason : str
+        If the directive is valid, return an empty reason. If
+        the source list contains invalid entity, return
+        an error message.
+ 
     """
 
     # when 'none' is applied no other source expressions are 
     # allowed (UA is supposed to fail such rule).
     if "'none'" in source_list:
         if len(source_list) > 1:
-            return False
+            return False, "When 'none' is present, other source expressions should not be present."
         else:
-            return True
+            return True, ""
+
     # match a source expression via the CSP grammar
-    return match_source_expressions(source_list)
+    is_valid = match_source_expressions(source_list)
+    if is_valid:
+        return is_valid, ""
+    else:
+        return is_valid, "%s contain invalid source expression."
 
 def match_source_expressions(source_list):
     """

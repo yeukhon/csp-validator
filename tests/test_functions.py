@@ -49,24 +49,30 @@ class TestValidateDirective(unittest.TestCase):
 
 
 class TestParseSourceList(unittest.TestCase):
-    def _test(self, slist, expectation):
-        r = csp.parse_source_list(slist)
-        self.assertEqual(expectation, r)
+    def _test(self, slist, expectation, expected_reason):
+        valid, reason = csp.parse_source_list(slist)
+        self.assertEqual(expectation, valid)
+        if expectation:
+            self.assertEqual(expected_reason, reason)
+            self.assertEqual(expected_reason, "")
+
+        else:
+            self.assertTrue(expected_reason in reason)
 
     def test_self_is_parsable(self):
-        self._test(["'self'"], True)
+        self._test(["'self'"], True, "")
 
     def test_self_url_is_parsable(self):
-        self._test(["'self'", "google.com"], True)
+        self._test(["'self'", "google.com"], True, "")
 
     def test_none_is_parsable(self):
-        self._test(["'none'"], True)
+        self._test(["'none'"], True, "")
 
     def test_none_url_not_parsable(self):
-        self._test(["'none'", "google.com"], False)
+        self._test(["'none'", "google.com"], False, "should not be present.")
 
     def test_url_none_not_parsable(self):
-        self._test(["google.com", "'none'"], False)
+        self._test(["google.com", "'none'"], False, "should not be present.")
 
 
 class TestMatchSourceExpressions(unittest.TestCase):
