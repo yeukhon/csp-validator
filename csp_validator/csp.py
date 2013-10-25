@@ -194,10 +194,9 @@ def match_source_expressions(source_list):
         is_scheme_src = match(uri, constant.SCHEME_SOURCE)
         is_keyword_src = match(uri, constant.KEYWORD_SOURCE)
         is_host_src = match(uri, constant.HOST_SOURCE)
-        if any((is_scheme_src, is_keyword_src, is_host_src)):
-            return True
-        else:
+        if not any((is_scheme_src, is_keyword_src, is_host_src)):
             return False
+    return True
 
 def match(uri, regex):
     """

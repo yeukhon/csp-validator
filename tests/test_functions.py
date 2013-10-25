@@ -100,6 +100,10 @@ class TestMatchSourceExpressions(unittest.TestCase):
         # CSP allows hostname like self, localhost, mail
         self._test(["self", "google.com"], True)
 
+    # issue #6
+    def test_slist_with_second_item_fail_should_fail_check(self):
+        self._test(["'self'", "'selfself'"], False)
+
 class TestValidate(unittest.TestCase):
     def _assert(self, policy, valid=None, fail_by_directive=None, fail_by_source=None, \
         directives=None, deprecated=False):
