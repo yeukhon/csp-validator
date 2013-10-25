@@ -28,8 +28,12 @@ class TestParsePolicy(unittest.TestCase):
 
 class TestValidateDirective(unittest.TestCase):
     def _test(self, name, expectation):
-        r = csp.validate_directive(name)
-        self.assertEqual(expectation, r)
+        valid, reason = csp.validate_directive(name)
+        self.assertEqual(expectation, valid)
+        if expectation:
+            self.assertEqual("", reason)
+        else:
+            self.assertEqual(name + " is an unknown directive.", reason)
 
     def test_default_src_in_directive(self):
         self._test("default-src", True)

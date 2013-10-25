@@ -39,11 +39,12 @@ def validate(csp):
     
     directives = parse_policy(csp)
     for directive in directives:
-        if not validate_directive(directive):
+        valid, reason = validate_directive(directive)
+        if not valid:
             result["errors"].append({
                 "directive_name": directive,
-                "reason": "%s is an unknown directive." % directive
-            })            
+                "reason": reason
+            })
         if not parse_source_list(directives[directive]):
             result["errors"].append({
                 "directive_name": directive,
@@ -111,10 +112,19 @@ def validate_directive(directive):
         specification, return ``True``. Otherwise,
         return ``False``.
 
+    reason : str
+        If the directive is valid, reason is empty. If
+        directive is invalid, we return a reason so that
+        ``validate`` append the reason to its corresponding
+        error.
+
     """
 
     is_valid = directive.lower() in constant.DIRECTIVES
-    return is_valid
+    if is_valid:
+        return is_valid, ""
+    else:
+        return is_valid, "%s is an unknown directive." % directive
 
 def parse_source_list(source_list):
     """
