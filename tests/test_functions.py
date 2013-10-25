@@ -86,53 +86,54 @@ class TestParseSourceList(unittest.TestCase):
 
 class TestMatchSourceExpressions(unittest.TestCase):
     
-    def _test(self, slist, expectation):
-        r = csp.match_source_expressions(slist)
-        self.assertEqual(expectation, r)
+    def _test(self, slist, valid, error):
+        is_valid, reason = csp.match_source_expressions(slist)
+        self.assertEqual(is_valid, valid)
+        self.assertEqual(True, error in reason)
 
     def test_slist_with_just_self(self):
-        self._test(["'self'"], True)
+        self._test(["'self'"], True, "")
 
     def test_slist_with_self_and_uri(self):
-        self._test(["'self'", "google.com"], True)
+        self._test(["'self'", "google.com"], True, "")
 
     def test_slist_with_self_without_quote_should_not_fail(self):
         # CSP allows hostname like self, localhost, mail
-        self._test(["self", "google.com"], True)
+        self._test(["self", "google.com"], True, "")
 
     # issue #6
     def test_slist_with_second_item_fail_should_fail_check(self):
-        self._test(["'self'", "'selfself'"], False)
+        self._test(["'self'", "'selfself'"], False, "invalid source expression")
+
+    def test_slist_with_deprecated_keyword(self):
+        self._test(["'self'", "'inline-eval'"], False, "deprecated keyword source")
 
 class TestValidate(unittest.TestCase):
     def _assert(self, policy, valid=None, fail_by_directive=None, fail_by_source=None, \
-        directives=None, deprecated=False):
+        directives=None, error_contain=None):
         r = csp.validate(policy)
         self.assertEqual(valid, r["valid"])
         if valid is False:
             if fail_by_directive:
-                self._assert_directive_errors(r["errors"], directives, deprecated=deprecated)
+                self._assert_directive_errors(r["errors"], directives, error_contain)
             elif fail_by_source:
-                self._assert_source_errors(r["errors"], directives)
+                self._assert_source_errors(r["errors"], directives, error_contain)
         else:
             self.assertEqual([], r["errors"])
 
-    def _assert_directive_errors(self, errors, directives, deprecated=False):
+    def _assert_directive_errors(self, errors, directives, error_contain):
         self.assertTrue(len(directives) == len(errors) and len(directives) > 0)
         for index, directive in enumerate(directives):
             for index, error in enumerate(errors):
                 if error["directive_name"] == directive:
-                    if deprecated:
-                        self.assertEqual(True, "deprecated" in error["reason"])
-                    else:
-                        self.assertEqual(True, "unknown directive" in error["reason"])
+                    self.assertEqual(True, error_contain in error["reason"])
                 
-    def _assert_source_errors(self, errors, directives):
+    def _assert_source_errors(self, errors, directives, error_contain):
         self.assertTrue(len(directives) == len(errors) and len(directives) > 0)
         for index, directive in enumerate(directives):
             for index, error in enumerate(errors):
                 if error["directive_name"] == directive:
-                    self.assertEqual(True, "invalid" in error["reason"])
+                    self.assertEqual(True, error_contain in error["reason"])
 
     def test_policy_with_just_default_src(self):
         policy = "default-src 'self';"
@@ -148,19 +149,29 @@ class TestValidate(unittest.TestCase):
 
     def test_policy_with_unknown_directive(self):
         policy = "unknown-src 'self' google.com;"
-        self._assert(policy, valid=False, directives=["unknown-src"], fail_by_directive=True)
+        self._assert(policy, valid=False, directives=["unknown-src"], \
+            fail_by_directive=True, error_contain="unknown directive")
 
     def test_policy_with_unkown_directive_as_second_directive(self):
         policy = "default-src 'self' google.com; unknown-src *;"
-        self._assert(policy, valid=False, directives=["unknown-src"], fail_by_directive=True)
+        self._assert(policy, valid=False, directives=["unknown-src"], \
+            fail_by_directive=True, error_contain="unknown directive")
 
     def test_policy_with_invalid_src_expression(self):
         policy = "default-src 'self-invalid';"
-        self._assert(policy, valid=False, fail_by_source=True, directives=["default-src"])
+        self._assert(policy, valid=False, fail_by_source=True, \
+            directives=["default-src"], error_contain="invalid source expression")
 
     def test_policy_with_allow_self_deprecated_policy(self):
         policy = "default-src 'self'; allow 'self';"
-        self._assert(policy, valid=False, fail_by_directive=True, directives=["allow"], deprecated=True)
+        self._assert(policy, valid=False, fail_by_directive=True, \
+            directives=["allow"], error_contain="deprecated directive")
+
+    def test_policy_contains_inline_script_deprecated_keyword_source(self):
+        policy = "default-src 'self'; script-src 'inline-script';"
+        self._assert(policy, valid=False, fail_by_directive=True, \
+            directives=["script-src"], error_contain="deprecated keyword source")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,3 +6,5 @@ DIRECTIVES = ("default-src", "script-src", "style-src", "object-src", "img-src",
     "media-src", "frame-src", "font-src", "connect-src", "report-uri")
 
 DEPRECATED_DIRECTIVES = ("allow",)
+DEPRECATED_KEYWORD_SOURCE = ("'inline-script'", "'inline-eval'", )
+KEYWORD_SOURCE_LIST = ("'self'", "'unsafe-inline'", "'unsafe-eval'") + DEPRECATED_KEYWORD_SOURCE

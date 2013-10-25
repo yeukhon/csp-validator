@@ -49,7 +49,7 @@ def validate(csp):
         if not valid:
             result["errors"].append({
                 "directive_name": directive,
-                "reason": reason % directive
+                "reason": reason
             })
 
     if result["errors"]:
@@ -145,7 +145,6 @@ def parse_source_list(source_list):
     Returns
     -------
     is_valid : bool
-   
     reason : str
         If the directive is valid, return an empty reason. If
         the source list contains invalid entity, return
@@ -162,11 +161,8 @@ def parse_source_list(source_list):
             return True, ""
 
     # match a source expression via the CSP grammar
-    is_valid = match_source_expressions(source_list)
-    if is_valid:
-        return is_valid, ""
-    else:
-        return is_valid, "%s contain invalid source expression."
+    valid, reason = match_source_expressions(source_list)
+    return valid, reason
 
 def match_source_expressions(source_list):
     """
@@ -182,12 +178,16 @@ def match_source_expressions(source_list):
     Returns
     -------
     matched : bool
+    reason: str
+        If there is an invalid source expression in the list,
+        an error message is returned. Otherwise, empty string
+        is returned.
 
     """
 
     # wildcard has superpower 
     if source_list and source_list[0] == "*":
-        return True
+        return True, ""
 
     for index, uri in enumerate(source_list):
         uri = uri.lower()
@@ -195,8 +195,11 @@ def match_source_expressions(source_list):
         is_keyword_src = match(uri, constant.KEYWORD_SOURCE)
         is_host_src = match(uri, constant.HOST_SOURCE)
         if not any((is_scheme_src, is_keyword_src, is_host_src)):
-            return False
-    return True
+            if uri in constant.DEPRECATED_KEYWORD_SOURCE:
+                return False, "%s is a deprecated keyword source." % uri
+            else:
+                return False, "%s is an invalid source expression." % uri
+    return True, ""
 
 def match(uri, regex):
     """
