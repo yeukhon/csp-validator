@@ -44,6 +44,12 @@ def validate(csp):
                 "directive_name": directive,
                 "reason": "%s is an unknown directive." % directive
             })            
+        if not parse_source_list(directives[directive]):
+            result["errors"].append({
+                "directive_name": directive,
+                "reason": "%s contain invalid source expression." % directive
+            })
+
     if result["errors"]:
         result["valid"] = False
     else:

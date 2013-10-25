@@ -82,55 +82,54 @@ class TestMatchSourceExpressions(unittest.TestCase):
         self._test(["self", "google.com"], True)
 
 class TestValidate(unittest.TestCase):
-    def _assert_valid(self, policy, expectation):
+    def _assert(self, policy, valid=None, fail_by_directive=None, fail_by_source=None, directives=None):
         r = csp.validate(policy)
-        self.assertEqual(expectation, r["valid"])
-
-    def _assert_errors(self, policy, errors=None, directive=None):
-        r = csp.validate(policy)
-        if not errors and directive:
-            found = False
-            for i, d in enumerate(r["errors"]):
-                if d.get(directive):
-                    found = True
-            if found:
-                self.assertEqual(True, r["errors"][directive] != [])
-                self.assertEqual(True, directive in r["errors"][directive])
-                self.assertEqual(True, "unknown directive" in r["errors"][directive])
-            else:
-                return False
+        self.assertEqual(valid, r["valid"])
+        if valid is False:
+            if fail_by_directive:
+                self._assert_directive_errors(r["errors"], directives)
+            elif fail_by_source:
+                self._assert_source_errors(r["errors"], directives)
         else:
             self.assertEqual([], r["errors"])
 
+    def _assert_directive_errors(self, errors, directives):
+        self.assertTrue(len(directives) == len(errors) and len(directives) > 0)
+        for index, directive in enumerate(directives):
+            for index, error in enumerate(errors):
+                if error["directive_name"] == directive:
+                    self.assertEqual(True, "unknown directive" in error["reason"])
+                
+    def _assert_source_errors(self, errors, directives):
+        self.assertTrue(len(directives) == len(errors) and len(directives) > 0)
+        for index, directive in enumerate(directives):
+            for index, error in enumerate(errors):
+                if error["directive_name"] == directive:
+                    self.assertEqual(True, "invalid" in error["reason"])
+
     def test_policy_with_just_default_src(self):
         policy = "default-src 'self';"
-        d = csp.validate(policy)
-        self._assert_valid(policy, True)
-        self._assert_errors(policy, errors=None)
+        self._assert(policy, valid=True)
 
     def test_policy_with_default_src_ends_without_semicolon(self):
         policy = "default-src 'self'"
-        d = csp.validate(policy)
-        self._assert_valid(policy, True)
-        self._assert_errors(policy, errors=None)
+        self._assert(policy, valid=True)
 
     def test_policy_with_two_directives(self):
         policy = "default-src 'self' google.com; img-src *;"
-        d = csp.validate(policy)
-        self._assert_valid(policy, True)
-        self._assert_errors(policy, errors=None)
+        self._assert(policy, valid=True)
 
     def test_policy_with_unknown_directive(self):
         policy = "unknown-src 'self' google.com;"
-        d = csp.validate(policy)
-        self._assert_valid(policy, False)
-        self._assert_errors(policy, directive="unknown-src")
+        self._assert(policy, valid=False, directives=["unknown-src"], fail_by_directive=True)
 
     def test_policy_with_unkown_directive_as_second_directive(self):
         policy = "default-src 'self' google.com; unknown-src *;"
-        d = csp.validate(policy)
-        self._assert_valid(policy, False)
-        self._assert_errors(policy, directive="uknown-src")
+        self._assert(policy, valid=False, directives=["unknown-src"], fail_by_directive=True)
+
+    def test_policy_with_invalid_src_expression(self):
+        policy = "default-src 'self-invalid';"
+        self._assert(policy, valid=False, fail_by_source=True, directives=["default-src"])
 
 if __name__ == "__main__":
     unittest.main()
