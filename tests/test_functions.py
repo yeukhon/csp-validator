@@ -106,7 +106,7 @@ class TestMatchSourceExpressions(unittest.TestCase):
         self._test(["'self'", "'selfself'"], False, "invalid source expression")
 
     def test_slist_with_deprecated_keyword(self):
-        self._test(["'self'", "'inline-eval'"], False, "deprecated keyword source")
+        self._test(["'self'", "'eval-script'"], False, "deprecated keyword source")
 
 class TestValidate(unittest.TestCase):
     def _assert(self, policy, valid=None, fail_by_directive=None, fail_by_source=None, \
